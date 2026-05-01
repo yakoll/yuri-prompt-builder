@@ -1,0 +1,1685 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Yuri Prompt Builder</title>
+  <style>
+    :root {
+      --bg-a: #faf5ef;
+      --bg-b: #edf6f1;
+      --bg-c: #f7edf3;
+      --panel: rgba(255, 252, 247, 0.9);
+      --text: #2f2925;
+      --muted: #776c63;
+      --line: #dfd5ca;
+      --accent: #c25772;
+      --accent-strong: #984057;
+      --accent-soft: #f8dbe3;
+      --mint: #d9ede5;
+      --sky: #dfeafb;
+      --sand: #f4e5c0;
+      --shadow: 0 18px 42px rgba(67, 51, 39, 0.12);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at top left, rgba(194, 87, 114, 0.18), transparent 30rem),
+        linear-gradient(135deg, var(--bg-a) 0%, var(--bg-b) 52%, var(--bg-c) 100%);
+      color: var(--text);
+      font-family: "Yu Gothic UI", "Hiragino Sans", Meiryo, sans-serif;
+      line-height: 1.5;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+    }
+
+    .app {
+      width: min(1420px, 100%);
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .hero {
+      padding: 10px 2px 22px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(28px, 4vw, 46px);
+      letter-spacing: 0;
+    }
+
+    .hero p {
+      margin: 8px 0 0;
+      color: var(--muted);
+      font-size: 15px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 420px;
+      gap: 18px;
+      align-items: start;
+    }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid rgba(223, 213, 202, 0.92);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+    }
+
+    .builder,
+    .output {
+      padding: 18px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 12px;
+      scrollbar-width: thin;
+    }
+
+    .tab {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      flex: 0 0 auto;
+      min-height: 38px;
+      padding: 0 14px;
+      border-radius: 999px;
+      background: #ece4dc;
+      color: #433a34;
+      white-space: nowrap;
+    }
+
+    .tab[aria-selected="true"] {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .tab.dragging {
+      opacity: 0.45;
+    }
+
+    .tab.drag-over {
+      outline: 2px solid rgba(194, 87, 114, 0.45);
+      outline-offset: 2px;
+    }
+
+    .tab-add {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 38px;
+      padding: 0;
+      font-size: 24px;
+      line-height: 38px;
+      background: #e4efe9;
+      color: #29443a;
+    }
+
+    .tab-remove {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 18px;
+      height: 18px;
+      padding: 0;
+      border-radius: 50%;
+      background: rgba(67, 58, 52, 0.12);
+      color: inherit;
+      font-size: 12px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .builder-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 0 12px;
+      border-top: 1px solid var(--line);
+    }
+
+    .builder-head h2 {
+      margin: 0;
+      font-size: 21px;
+    }
+
+    .search {
+      width: min(320px, 46%);
+      min-width: 180px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .chips {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(172px, 1fr));
+      gap: 10px;
+    }
+
+    .chip {
+      min-height: 56px;
+      padding: 8px 10px;
+      text-align: left;
+      border: 1px solid #d9cfc5;
+      border-radius: 8px;
+      background: #fffaf4;
+      color: var(--text);
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    .chip:hover {
+      transform: translateY(-1px);
+      border-color: var(--accent);
+    }
+
+    .chip.active {
+      background: var(--accent-soft);
+      border-color: var(--accent);
+    }
+
+    .chip-jp {
+      display: block;
+      font-size: 14px;
+      font-weight: 700;
+    }
+
+    .chip-en {
+      display: block;
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+      overflow-wrap: anywhere;
+    }
+
+    .output {
+      position: sticky;
+      top: 18px;
+    }
+
+    .output h2 {
+      margin: 0 0 12px;
+      font-size: 20px;
+    }
+
+    .presets {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 9px;
+      margin-bottom: 16px;
+    }
+
+    .preset {
+      min-height: 48px;
+      border-radius: 8px;
+      font-weight: 700;
+      color: #23362f;
+      background: var(--mint);
+    }
+
+    .preset:nth-child(2) {
+      color: #2b4060;
+      background: var(--sky);
+    }
+
+    .preset:nth-child(3) {
+      color: #5c4520;
+      background: var(--sand);
+    }
+
+    .preset-card {
+      margin-bottom: 16px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255, 255, 255, 0.64);
+    }
+
+    .preset-card h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .preset-editor {
+      display: grid;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .preset-editor input,
+    .preset-editor textarea {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .preset-editor textarea {
+      min-height: 88px;
+    }
+
+    .preset-tile {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-height: 48px;
+      padding: 0 10px;
+      border-radius: 8px;
+      font-weight: 700;
+      color: #23362f;
+      background: var(--mint);
+    }
+
+    .preset-tile:nth-child(3n+2) {
+      color: #2b4060;
+      background: var(--sky);
+    }
+
+    .preset-tile:nth-child(3n+3) {
+      color: #5c4520;
+      background: var(--sand);
+    }
+
+    .preset-apply {
+      flex: 1 1 auto;
+      min-height: 48px;
+      padding: 0;
+      background: transparent;
+      color: inherit;
+      text-align: left;
+      font-weight: 700;
+    }
+
+    .preset-remove {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(48, 42, 37, 0.12);
+      color: inherit;
+      font-size: 12px;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+
+    .field {
+      margin-bottom: 16px;
+    }
+
+    .field label {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 7px;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--muted);
+    }
+
+    textarea {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      color: var(--text);
+      padding: 12px;
+      resize: vertical;
+      min-height: 132px;
+    }
+
+    .prompt-editor {
+      position: relative;
+    }
+
+    .prompt-mirror,
+    .prompt-editor textarea {
+      width: 100%;
+      min-height: 132px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      font: inherit;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .prompt-mirror {
+      position: absolute;
+      inset: 0;
+      background: #fff;
+      color: var(--text);
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    .prompt-editor textarea {
+      position: relative;
+      background: transparent;
+      color: transparent;
+      caret-color: var(--text);
+    }
+
+    .prompt-editor textarea::selection {
+      background: rgba(194, 87, 114, 0.22);
+      color: transparent;
+    }
+
+    .mirror-duplicate {
+      color: #b42318;
+      font-weight: 700;
+    }
+
+    #negativePrompt {
+      min-height: 92px;
+    }
+
+    .duplicate-note {
+      min-height: 20px;
+      margin-top: 8px;
+      color: #b42318;
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 9px;
+    }
+
+    .action {
+      min-height: 42px;
+      border-radius: 8px;
+      font-weight: 700;
+      background: #ece4dc;
+      color: var(--text);
+    }
+
+    .action.primary {
+      color: #fff;
+      background: var(--accent);
+    }
+
+    .action.primary:hover {
+      background: var(--accent-strong);
+    }
+
+    .custom {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      margin-top: 14px;
+    }
+
+    .custom input {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px;
+      background: #fff;
+    }
+
+    .vocab-editor {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .vocab-editor h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .vocab-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .vocab-editor input,
+    .vocab-editor select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 11px;
+      background: #fff;
+      color: var(--text);
+    }
+
+    .selected {
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .selected h3 {
+      margin: 0 0 10px;
+      font-size: 15px;
+    }
+
+    .selected-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      min-height: 38px;
+    }
+
+    .selected-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      max-width: 100%;
+      padding: 7px 9px;
+      border-radius: 999px;
+      background: #f0e9e1;
+      color: #463d36;
+      font-size: 12px;
+    }
+
+    .selected-tag.duplicate {
+      background: #fde8e8;
+      color: #b42318;
+      border: 1px solid #f3b6b6;
+    }
+
+    .remove {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: #d6cabd;
+      color: #352e28;
+      font-size: 13px;
+      line-height: 1;
+    }
+
+    .toast {
+      min-height: 22px;
+      margin-top: 12px;
+      color: var(--accent-strong);
+      font-size: 13px;
+      font-weight: 700;
+    }
+
+    @media (max-width: 980px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      .output {
+        position: static;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .app {
+        padding: 14px;
+      }
+
+      .builder-head {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search {
+        width: 100%;
+      }
+
+      .chips,
+      .presets,
+      .vocab-grid,
+      .actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="hero">
+      <h1>Yuri Prompt Builder</h1>
+      <p>日本語のボタンから、女の子ふたりの仲良しイラスト向け英語プロンプトを組み立てるツールです。</p>
+    </section>
+
+    <div class="layout">
+      <section class="panel builder">
+        <nav class="tabs" id="tabs" aria-label="カテゴリ"></nav>
+
+        <div class="builder-head">
+          <h2 id="categoryTitle"></h2>
+          <input class="search" id="search" type="search" placeholder="日本語・英語で検索">
+          <button class="action" id="checkDuplicates">重複チェック</button>
+        </div>
+
+        <div class="chips" id="chips"></div>
+      </section>
+
+      <aside class="panel output">
+        <h2>生成プロンプト</h2>
+
+        <section class="preset-card">
+          <h3>プロンプトセット</h3>
+          <div class="presets" id="presetList"></div>
+        <div class="preset-editor">
+          <input id="presetName" type="text" placeholder="セット名 例: 遊園地 / みどり">
+          <textarea id="presetTerms" spellcheck="false" placeholder="まとめて入れる英語タグ 例: ferris wheel, blue sky, many people, balloons"></textarea>
+          <button class="action" id="addPreset">セットを保存</button>
+        </div>
+        </section>
+        <div hidden>
+          <button class="preset" data-preset="sweet">甘い雰囲気</button>
+          <button class="preset" data-preset="school">放課後</button>
+          <button class="preset" data-preset="date">デート</button>
+        </div>
+
+        <div class="field">
+          <label for="prompt">Prompt <span id="promptCount">0 words</span></label>
+          <div class="prompt-editor">
+            <div class="prompt-mirror" id="promptMirror" aria-hidden="true"></div>
+            <textarea id="prompt" spellcheck="false"></textarea>
+          </div>
+          <div class="duplicate-note" id="duplicateNote"></div>
+        </div>
+
+        <div class="field">
+          <label for="negativePrompt">Negative Prompt</label>
+          <textarea id="negativePrompt" spellcheck="false"></textarea>
+        </div>
+
+        <div class="actions">
+          <button class="action primary" id="copyPrompt">Promptをコピー</button>
+          <button class="action" id="copyNegative">Negativeをコピー</button>
+          <button class="action" id="copyBoth">両方コピー</button>
+          <button class="action" id="reset">リセット</button>
+        </div>
+
+        <div class="custom">
+          <input id="customTerm" type="text" placeholder="英語タグを直接追加">
+          <button class="action" id="addCustom">追加</button>
+        </div>
+
+        <section class="vocab-editor">
+          <h3>新しい単語をボタンに追加</h3>
+          <div class="vocab-grid">
+            <input id="newLabelJa" type="text" placeholder="表示名 日本語 省略可">
+            <input id="newTermEn" type="text" placeholder="英語タグ 例: black ponytail">
+          </div>
+          <div class="vocab-grid">
+            <select id="newCategory"></select>
+            <button class="action" id="addVocabulary">カテゴリへ追加</button>
+          </div>
+        </section>
+
+        <section class="selected">
+          <h3>選択中</h3>
+          <div class="selected-list" id="selectedList"></div>
+        </section>
+
+        <div class="toast" id="toast" aria-live="polite"></div>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const categories = [
+      {
+        id: "base",
+        name: "基本",
+        items: [
+          ["女の子ふたり", "two girls"],
+          ["百合", "yuri"],
+          ["仲良し", "close friends"],
+          ["恋人同士", "romantic couple"],
+          ["同い年", "same age"],
+          ["先輩と後輩", "senpai and kouhai"],
+          ["幼なじみ", "childhood friends"],
+          ["ほのぼの", "heartwarming atmosphere"],
+          ["甘酸っぱい", "bittersweet romantic mood"],
+          ["健全", "wholesome"]
+        ]
+      },
+      {
+        id: "pose",
+        name: "ポーズ",
+        items: [
+          ["手をつなぐ", "holding hands"],
+          ["見つめ合う", "looking at each other"],
+          ["寄り添う", "standing close together"],
+          ["抱きしめる", "hugging"],
+          ["腕を組む", "linking arms"],
+          ["頭をなでる", "patting head"],
+          ["肩にもたれる", "resting head on shoulder"],
+          ["膝枕", "lap pillow"],
+          ["背中合わせ", "back to back"],
+          ["一緒に歩く", "walking together"]
+        ]
+      },
+      {
+        id: "face",
+        name: "表情",
+        items: [
+          ["笑顔", "smiling"],
+          ["照れ顔", "blushing"],
+          ["優しい表情", "gentle expression"],
+          ["嬉しそう", "happy expression"],
+          ["恥ずかしそう", "shy expression"],
+          ["安心した顔", "relieved expression"],
+          ["泣き笑い", "smiling through tears"],
+          ["頬を赤らめる", "rosy cheeks"],
+          ["目を閉じる", "closed eyes"],
+          ["小さく笑う", "soft smile"]
+        ]
+      },
+      {
+        id: "clothes",
+        name: "服装",
+        items: [
+          ["制服", "school uniforms"],
+          ["セーラー服", "sailor uniforms"],
+          ["ブレザー", "blazer uniforms"],
+          ["私服", "casual clothes"],
+          ["ワンピース", "one-piece dresses"],
+          ["カーディガン", "cardigans"],
+          ["浴衣", "yukata"],
+          ["メイド服", "maid outfits"],
+          ["パーカー", "hoodies"],
+          ["おそろいの服", "matching outfits"]
+        ]
+      },
+      {
+        id: "place",
+        name: "場所",
+        items: [
+          ["放課後の教室", "after school classroom"],
+          ["屋上", "school rooftop"],
+          ["図書室", "school library"],
+          ["帰り道", "walk home after school"],
+          ["桜並木", "cherry blossom avenue"],
+          ["海辺", "seaside"],
+          ["カフェ", "cozy cafe"],
+          ["夏祭り", "summer festival"],
+          ["雨の日の駅", "rainy train station"],
+          ["夕焼けの公園", "sunset park"]
+        ]
+      },
+      {
+        id: "mood",
+        name: "雰囲気",
+        items: [
+          ["やわらかい光", "soft lighting"],
+          ["夕暮れ", "golden hour"],
+          ["透明感", "clear delicate atmosphere"],
+          ["淡い色", "pastel colors"],
+          ["きらきら", "sparkling highlights"],
+          ["温かい", "warm atmosphere"],
+          ["静かな", "quiet mood"],
+          ["夢みたい", "dreamy mood"],
+          ["映画的", "cinematic composition"],
+          ["青春", "youthful feeling"]
+        ]
+      },
+      {
+        id: "style",
+        name: "画風",
+        items: [
+          ["アニメ調", "anime style"],
+          ["繊細な線", "delicate line art"],
+          ["水彩風", "watercolor style"],
+          ["厚塗り", "painterly style"],
+          ["少女漫画風", "shoujo manga style"],
+          ["かわいい", "cute"],
+          ["高精細", "highly detailed"],
+          ["美しい構図", "beautiful composition"],
+          ["背景もしっかり", "detailed background"],
+          ["柔らかい陰影", "soft shading"]
+        ]
+      },
+      {
+        id: "quality",
+        name: "品質",
+        items: [
+          ["傑作", "masterpiece"],
+          ["最高品質", "best quality"],
+          ["高解像度", "high resolution"],
+          ["細部まで丁寧", "intricate details"],
+          ["自然な手", "natural hands"],
+          ["きれいな顔", "beautiful faces"],
+          ["きれいな瞳", "beautiful eyes"],
+          ["調和した色", "harmonious colors"],
+          ["奥行き", "depth of field"],
+          ["完成度が高い", "polished illustration"]
+        ]
+      },
+      {
+        id: "negative",
+        name: "除外",
+        negative: true,
+        items: [
+          ["低品質", "low quality"],
+          ["ぼやけ", "blurry"],
+          ["崩れた顔", "bad face"],
+          ["崩れた手", "bad hands"],
+          ["指が多い", "extra fingers"],
+          ["指が少ない", "missing fingers"],
+          ["余分な腕", "extra arms"],
+          ["変な体", "bad anatomy"],
+          ["文字", "text"],
+          ["透かし", "watermark"]
+        ]
+      }
+    ];
+
+    const promptSets = [
+      {
+        id: "sweet",
+        name: "甘い雰囲気",
+        builtin: true,
+        terms: [
+          "two girls",
+          "yuri",
+          "romantic couple",
+          "holding hands",
+          "looking at each other",
+          "blushing",
+          "soft smile",
+          "soft lighting",
+          "pastel colors",
+          "anime style",
+          "masterpiece",
+          "best quality"
+        ]
+      },
+      {
+        id: "school",
+        name: "放課後",
+        builtin: true,
+        terms: [
+          "two girls",
+          "yuri",
+          "senpai and kouhai",
+          "school uniforms",
+          "after school classroom",
+          "standing close together",
+          "gentle expression",
+          "golden hour",
+          "youthful feeling",
+          "detailed background",
+          "masterpiece"
+        ]
+      },
+      {
+        id: "date",
+        name: "デート",
+        builtin: true,
+        terms: [
+          "two girls",
+          "yuri",
+          "romantic couple",
+          "casual clothes",
+          "cozy cafe",
+          "linking arms",
+          "happy expression",
+          "warm atmosphere",
+          "cinematic composition",
+          "beautiful composition",
+          "highly detailed"
+        ]
+      }
+    ];
+
+    const defaultNegative = [
+      "low quality",
+      "blurry",
+      "bad anatomy",
+      "bad hands",
+      "extra fingers",
+      "missing fingers",
+      "text",
+      "watermark"
+    ];
+
+    let currentCategory = categories[0].id;
+    let selected = [];
+    let negativeSelected = [...defaultNegative];
+
+    const tabs = document.querySelector("#tabs");
+    const chips = document.querySelector("#chips");
+    const categoryTitle = document.querySelector("#categoryTitle");
+    const search = document.querySelector("#search");
+    const prompt = document.querySelector("#prompt");
+    const promptMirror = document.querySelector("#promptMirror");
+    const negativePrompt = document.querySelector("#negativePrompt");
+    const promptCount = document.querySelector("#promptCount");
+    const duplicateNote = document.querySelector("#duplicateNote");
+    const selectedList = document.querySelector("#selectedList");
+    const toast = document.querySelector("#toast");
+    const customTerm = document.querySelector("#customTerm");
+    const presetList = document.querySelector("#presetList");
+    const presetName = document.querySelector("#presetName");
+    const presetTerms = document.querySelector("#presetTerms");
+    const newLabelJa = document.querySelector("#newLabelJa");
+    const newTermEn = document.querySelector("#newTermEn");
+    const newCategory = document.querySelector("#newCategory");
+    const customCategoriesKey = "yuri-prompt-builder-custom-categories";
+    const categoryOrderKey = "yuri-prompt-builder-category-order";
+    const customVocabularyKey = "yuri-prompt-builder-custom-vocabulary";
+    const customPromptSetsKey = "yuri-prompt-builder-custom-prompt-sets";
+    let draggedCategoryId = null;
+    let duplicateTerms = [];
+
+    function uniq(items) {
+      return [...new Set(items.filter(Boolean))];
+    }
+
+    function parseTerms(text) {
+      return uniq(
+        text
+          .split(/[\n,]/)
+          .map((term) => term.trim())
+          .filter(Boolean)
+      );
+    }
+
+    function readPromptTerms() {
+      return parseTerms(prompt.value);
+    }
+
+    function escapeHtml(text) {
+      return text
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;");
+    }
+
+    function insertCommaSpace(textarea) {
+      const start = textarea.selectionStart;
+      const end = textarea.selectionEnd;
+      const before = textarea.value.slice(0, start);
+      const after = textarea.value.slice(end);
+      const beforeTrimmed = before.replace(/\s+$/, "");
+      const needsLeadingComma = beforeTrimmed.length > 0 && !beforeTrimmed.endsWith(",");
+      const alreadySpaced = after.startsWith(" ");
+      const insertion = needsLeadingComma ? (alreadySpaced ? "," : ", ") : "";
+
+      if (!insertion) {
+        return;
+      }
+
+      textarea.value = `${before}${insertion}${after}`;
+      const caret = before.length + insertion.length;
+      textarea.setSelectionRange(caret, caret);
+      textarea.dispatchEvent(new Event("input", { bubbles: true }));
+    }
+
+    function findDuplicateTerms(terms) {
+      const counts = new Map();
+
+      for (const term of terms) {
+        const key = term.toLowerCase();
+        counts.set(key, (counts.get(key) || 0) + 1);
+      }
+
+      return terms.filter((term, index) => {
+        const key = term.toLowerCase();
+        return counts.get(key) > 1 && terms.findIndex((item) => item.toLowerCase() === key) === index;
+      });
+    }
+
+    function checkPromptDuplicates(showWhenClean = true) {
+      const rawTerms = prompt.value
+        .split(",")
+        .map((term) => term.trim())
+        .filter(Boolean);
+      const duplicates = findDuplicateTerms(rawTerms);
+      duplicateTerms = duplicates;
+      renderDuplicateState();
+      renderPromptMirror();
+      renderSelected();
+
+      if (duplicates.length > 0) {
+        window.alert(`重複しているプロンプトがあります:\n- ${duplicates.join("\n- ")}`);
+        return false;
+      }
+
+      if (showWhenClean) {
+        showToast("重複は見つかりませんでした。");
+      }
+
+      return true;
+    }
+
+    function renderDuplicateState() {
+      if (duplicateTerms.length > 0) {
+        duplicateNote.textContent = `重複: ${duplicateTerms.join(", ")}`;
+      } else {
+        duplicateNote.textContent = "";
+      }
+    }
+
+    function activeCategory() {
+      return categories.find((category) => category.id === currentCategory);
+    }
+
+    function makeCategoryId(name) {
+      const base = name
+        .toLowerCase()
+        .trim()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+
+      return `custom-${base || "category"}-${Date.now()}`;
+    }
+
+    function saveCustomCategories() {
+      const customCategories = categories
+        .filter((category) => category.custom === true)
+        .map((category) => ({
+          id: category.id,
+          name: category.name,
+          negative: !!category.negative
+        }));
+
+      localStorage.setItem(customCategoriesKey, JSON.stringify(customCategories));
+    }
+
+    function saveCategoryOrder() {
+      localStorage.setItem(categoryOrderKey, JSON.stringify(categories.map((category) => category.id)));
+    }
+
+    function loadCategoryOrder() {
+      try {
+        const savedOrder = JSON.parse(localStorage.getItem(categoryOrderKey) || "[]");
+
+        if (!Array.isArray(savedOrder) || savedOrder.length === 0) {
+          return;
+        }
+
+        const ordered = [];
+
+        for (const id of savedOrder) {
+          const category = categories.find((item) => item.id === id);
+
+          if (category && !ordered.includes(category)) {
+            ordered.push(category);
+          }
+        }
+
+        for (const category of categories) {
+          if (!ordered.includes(category)) {
+            ordered.push(category);
+          }
+        }
+
+        categories.splice(0, categories.length, ...ordered);
+      } catch (error) {
+        console.error("Failed to load category order", error);
+      }
+    }
+
+    function loadCustomCategories() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(customCategoriesKey) || "[]");
+
+        for (const entry of saved) {
+          if (!entry || typeof entry.id !== "string" || typeof entry.name !== "string") {
+            continue;
+          }
+
+          const exists = categories.some((category) => category.id === entry.id);
+
+          if (!exists) {
+            categories.push({
+              id: entry.id,
+              name: entry.name,
+              negative: !!entry.negative,
+              custom: true,
+              items: []
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load custom categories", error);
+      }
+    }
+
+    function saveCustomVocabulary() {
+      const customItems = categories
+        .map((category) => ({
+          id: category.id,
+          items: category.items.filter((item) => item[2] === true).map(([jp, en]) => [jp, en])
+        }))
+        .filter((category) => category.items.length > 0);
+
+      localStorage.setItem(customVocabularyKey, JSON.stringify(customItems));
+    }
+
+    function savePromptSets() {
+      const customSets = promptSets
+        .filter((set) => set.builtin !== true)
+        .map((set) => ({
+          id: set.id,
+          name: set.name,
+          terms: set.terms
+        }));
+
+      localStorage.setItem(customPromptSetsKey, JSON.stringify(customSets));
+    }
+
+    function loadPromptSets() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(customPromptSetsKey) || "[]");
+
+        if (!Array.isArray(saved)) {
+          return;
+        }
+
+        for (const entry of saved) {
+          if (!entry || typeof entry.id !== "string" || typeof entry.name !== "string" || !Array.isArray(entry.terms)) {
+            continue;
+          }
+
+          const exists = promptSets.some((set) => set.id === entry.id);
+
+          if (!exists) {
+            promptSets.push({
+              id: entry.id,
+              name: entry.name,
+              terms: uniq(entry.terms.map((term) => String(term).trim()).filter(Boolean))
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load prompt sets", error);
+      }
+    }
+
+    function deleteCategory(categoryId) {
+      const index = categories.findIndex((category) => category.id === categoryId && category.custom === true);
+
+      if (index < 0) {
+        showToast("このカテゴリは削除できません。");
+        return;
+      }
+
+      const category = categories[index];
+      const confirmed = window.confirm(`「${category.name}」を削除しますか？\nこのカテゴリに追加した単語も消えます。`);
+
+      if (!confirmed) {
+        return;
+      }
+
+      categories.splice(index, 1);
+
+      if (currentCategory === categoryId) {
+        currentCategory = categories[0]?.id || "";
+      }
+
+      saveCustomCategories();
+      saveCustomVocabulary();
+      saveCategoryOrder();
+      render();
+      showToast("カテゴリを削除しました。");
+    }
+
+    function loadCustomVocabulary() {
+      try {
+        const saved = JSON.parse(localStorage.getItem(customVocabularyKey) || "[]");
+
+        for (const savedCategory of saved) {
+          const category = categories.find((item) => item.id === savedCategory.id);
+
+          if (!category || !Array.isArray(savedCategory.items)) {
+            continue;
+          }
+
+          for (const entry of savedCategory.items) {
+            if (!Array.isArray(entry) || entry.length < 2) {
+              continue;
+            }
+
+            const [jp, en] = entry;
+            const exists = category.items.some((item) => item[1] === en);
+
+            if (!exists) {
+              category.items.push([jp, en, true]);
+            }
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load custom vocabulary", error);
+      }
+    }
+
+    function renderCategoryOptions() {
+      newCategory.innerHTML = "";
+
+      for (const category of categories) {
+        const option = document.createElement("option");
+        option.value = category.id;
+        option.textContent = category.name;
+        newCategory.appendChild(option);
+      }
+
+      newCategory.value = currentCategory;
+    }
+
+    function applyPromptSet(setId) {
+      const set = promptSets.find((item) => item.id === setId);
+
+      if (!set) {
+        return;
+      }
+
+      selected = uniq([...readPromptTerms(), ...set.terms]);
+      render();
+      showToast(`「${set.name}」を追加しました。`);
+    }
+
+    function deletePromptSet(setId) {
+      const index = promptSets.findIndex((set) => set.id === setId && set.builtin !== true);
+
+      if (index < 0) {
+        showToast("このセットは削除できません。");
+        return;
+      }
+
+      const set = promptSets[index];
+      const confirmed = window.confirm(`「${set.name}」を削除しますか？`);
+
+      if (!confirmed) {
+        return;
+      }
+
+      promptSets.splice(index, 1);
+      savePromptSets();
+      renderPromptSets();
+      showToast("セットを削除しました。");
+    }
+
+    function renderPromptSets() {
+      presetList.innerHTML = "";
+
+      for (const set of promptSets) {
+        const tile = document.createElement("div");
+        const applyButton = document.createElement("button");
+
+        tile.className = "preset-tile";
+        applyButton.className = "preset-apply";
+        applyButton.type = "button";
+        applyButton.textContent = set.name;
+        applyButton.addEventListener("click", () => applyPromptSet(set.id));
+        tile.appendChild(applyButton);
+
+        if (set.builtin !== true) {
+          const removeButton = document.createElement("button");
+          removeButton.className = "preset-remove";
+          removeButton.type = "button";
+          removeButton.textContent = "x";
+          removeButton.setAttribute("aria-label", `${set.name} を削除`);
+          removeButton.addEventListener("click", () => deletePromptSet(set.id));
+          tile.appendChild(removeButton);
+        }
+
+        presetList.appendChild(tile);
+      }
+    }
+
+    function moveCategory(fromId, toId) {
+      if (!fromId || !toId || fromId === toId) {
+        return;
+      }
+
+      const fromIndex = categories.findIndex((category) => category.id === fromId);
+      const toIndex = categories.findIndex((category) => category.id === toId);
+
+      if (fromIndex < 0 || toIndex < 0) {
+        return;
+      }
+
+      const [moved] = categories.splice(fromIndex, 1);
+      categories.splice(toIndex, 0, moved);
+      saveCategoryOrder();
+      render();
+    }
+
+    function renderTabs() {
+      tabs.innerHTML = "";
+
+      for (const category of categories) {
+        const button = document.createElement("button");
+        button.className = "tab";
+        button.type = "button";
+        button.draggable = true;
+        button.dataset.categoryId = category.id;
+        button.setAttribute("aria-selected", category.id === currentCategory ? "true" : "false");
+        button.append(document.createTextNode(category.name));
+        button.addEventListener("click", () => {
+          currentCategory = category.id;
+          search.value = "";
+          render();
+        });
+        button.addEventListener("dragstart", (event) => {
+          draggedCategoryId = category.id;
+          button.classList.add("dragging");
+          event.dataTransfer.effectAllowed = "move";
+          event.dataTransfer.setData("text/plain", category.id);
+        });
+        button.addEventListener("dragend", () => {
+          draggedCategoryId = null;
+          tabs.querySelectorAll(".tab").forEach((tab) => tab.classList.remove("dragging", "drag-over"));
+        });
+        button.addEventListener("dragover", (event) => {
+          event.preventDefault();
+          if (draggedCategoryId && draggedCategoryId !== category.id) {
+            button.classList.add("drag-over");
+          }
+        });
+        button.addEventListener("dragleave", () => {
+          button.classList.remove("drag-over");
+        });
+        button.addEventListener("drop", (event) => {
+          event.preventDefault();
+          button.classList.remove("drag-over");
+          moveCategory(draggedCategoryId, category.id);
+        });
+
+        if (category.custom === true) {
+          const removeButton = document.createElement("button");
+          removeButton.className = "tab-remove";
+          removeButton.type = "button";
+          removeButton.textContent = "x";
+          removeButton.setAttribute("aria-label", `${category.name} を削除`);
+          removeButton.addEventListener("click", (event) => {
+            event.stopPropagation();
+            deleteCategory(category.id);
+          });
+          button.appendChild(removeButton);
+        }
+
+        tabs.appendChild(button);
+      }
+
+      const addButton = document.createElement("button");
+      addButton.className = "tab tab-add";
+      addButton.type = "button";
+      addButton.textContent = "+";
+      addButton.setAttribute("aria-label", "カテゴリを追加");
+      addButton.addEventListener("click", addCategory);
+      tabs.appendChild(addButton);
+    }
+
+    function renderChips() {
+      const category = activeCategory();
+      const query = search.value.trim().toLowerCase();
+      const pool = category.negative ? negativeSelected : selected;
+
+      categoryTitle.textContent = category.name;
+      chips.innerHTML = "";
+
+      const filtered = category.items.filter(([jp, en]) => {
+        return !query || jp.toLowerCase().includes(query) || en.toLowerCase().includes(query);
+      });
+
+      for (const [jp, en] of filtered) {
+        const button = document.createElement("button");
+        button.className = `chip ${pool.includes(en) ? "active" : ""}`;
+        button.type = "button";
+        button.innerHTML = `<span class="chip-jp">${jp}</span><span class="chip-en">${en}</span>`;
+        button.addEventListener("click", () => toggleTerm(en, !!category.negative));
+        chips.appendChild(button);
+      }
+    }
+
+    function toggleTerm(term, isNegative) {
+      const pool = isNegative ? negativeSelected : selected;
+      const index = pool.indexOf(term);
+
+      if (index >= 0) {
+        pool.splice(index, 1);
+      } else {
+        pool.push(term);
+      }
+
+      render();
+    }
+
+    function removeTerm(term, isNegative) {
+      const pool = isNegative ? negativeSelected : selected;
+      const index = pool.indexOf(term);
+
+      if (index >= 0) {
+        pool.splice(index, 1);
+      }
+
+      render();
+    }
+
+    function renderOutput() {
+      selected = uniq(selected);
+      negativeSelected = uniq(negativeSelected);
+      prompt.value = selected.join(", ");
+      negativePrompt.value = negativeSelected.join(", ");
+      updatePromptCount();
+      renderPromptMirror();
+    }
+
+    function updatePromptCount() {
+      const count = prompt.value ? prompt.value.split(/\s+/).length : 0;
+      promptCount.textContent = `${count} words`;
+    }
+
+    function renderPromptMirror() {
+      if (duplicateTerms.length === 0) {
+        promptMirror.innerHTML = `${escapeHtml(prompt.value)}<br>`;
+        return;
+      }
+
+      const terms = prompt.value.split(",");
+      const html = terms.map((term) => {
+        const trimmed = term.trim();
+        const escaped = escapeHtml(term);
+        const isDuplicate = trimmed && duplicateTerms.some((item) => item.toLowerCase() === trimmed.toLowerCase());
+        return isDuplicate ? `<span class="mirror-duplicate">${escaped}</span>` : escaped;
+      }).join(",");
+
+      promptMirror.innerHTML = `${html}<br>`;
+    }
+
+    function renderSelected() {
+      selectedList.innerHTML = "";
+
+      const allTerms = [
+        ...selected.map((term) => ({ term, isNegative: false })),
+        ...negativeSelected.map((term) => ({ term, isNegative: true }))
+      ];
+
+      for (const item of allTerms) {
+        const tag = document.createElement("span");
+        const remove = document.createElement("button");
+        const isDuplicate = !item.isNegative && duplicateTerms.some((term) => term.toLowerCase() === item.term.toLowerCase());
+
+        tag.className = `selected-tag${isDuplicate ? " duplicate" : ""}`;
+        tag.textContent = item.isNegative ? `除外: ${item.term}` : item.term;
+
+        remove.className = "remove";
+        remove.type = "button";
+        remove.textContent = "x";
+        remove.setAttribute("aria-label", `${item.term}を削除`);
+        remove.addEventListener("click", () => removeTerm(item.term, item.isNegative));
+
+        tag.appendChild(remove);
+        selectedList.appendChild(tag);
+      }
+    }
+
+    function render() {
+      renderTabs();
+      renderPromptSets();
+      renderCategoryOptions();
+      renderChips();
+      renderOutput();
+      renderDuplicateState();
+      renderSelected();
+      renderPromptMirror();
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => {
+        toast.textContent = "";
+      }, 1800);
+    }
+
+    async function copyText(text, message) {
+      if (!text.trim()) {
+        showToast("コピーする内容がありません。");
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(text);
+        showToast(message);
+      } catch (error) {
+        showToast("ブラウザ側でコピーできませんでした。手動で選択してください。");
+      }
+    }
+
+    function addCategory() {
+      const name = window.prompt("追加するカテゴリ名を入力してください。", "");
+
+      if (name === null) {
+        return;
+      }
+
+      const trimmed = name.trim();
+
+      if (!trimmed) {
+        showToast("カテゴリ名を入力してください。");
+        return;
+      }
+
+      const exists = categories.some((category) => category.name === trimmed);
+
+      if (exists) {
+        showToast("そのカテゴリ名はすでにあります。");
+        return;
+      }
+
+      const newId = makeCategoryId(trimmed);
+      categories.push({
+        id: newId,
+        name: trimmed,
+        custom: true,
+        items: []
+      });
+      currentCategory = newId;
+      saveCustomCategories();
+      saveCategoryOrder();
+      render();
+      showToast("カテゴリを追加しました。");
+    }
+
+    document.querySelector("#copyPrompt").addEventListener("click", () => {
+      copyText(prompt.value, "Promptをコピーしました。");
+    });
+
+    document.querySelector("#copyNegative").addEventListener("click", () => {
+      copyText(negativePrompt.value, "Negative Promptをコピーしました。");
+    });
+
+    document.querySelector("#copyBoth").addEventListener("click", () => {
+      copyText(`Prompt:\n${prompt.value}\n\nNegative Prompt:\n${negativePrompt.value}`, "両方コピーしました。");
+    });
+
+    document.querySelector("#reset").addEventListener("click", () => {
+      selected = [];
+      negativeSelected = [...defaultNegative];
+      render();
+      showToast("リセットしました。");
+    });
+
+    document.querySelector("#addCustom").addEventListener("click", () => {
+      const term = customTerm.value.trim();
+
+      if (!term) {
+        return;
+      }
+
+      selected = uniq([...readPromptTerms(), term]);
+      customTerm.value = "";
+      render();
+    });
+
+    document.querySelector("#addVocabulary").addEventListener("click", () => {
+      const term = newTermEn.value.trim();
+      const label = newLabelJa.value.trim() || term;
+      const categoryId = newCategory.value;
+      const category = categories.find((item) => item.id === categoryId);
+
+      if (!term || !category) {
+        showToast("追加する単語とカテゴリを入れてください。");
+        return;
+      }
+
+      const exists = category.items.some((item) => item[1].toLowerCase() === term.toLowerCase());
+
+      if (exists) {
+        showToast("その英語タグはすでにあります。");
+        return;
+      }
+
+      category.items.push([label, term, true]);
+      currentCategory = categoryId;
+      newLabelJa.value = "";
+      newTermEn.value = "";
+      saveCustomVocabulary();
+      render();
+      showToast("新しいボタンを追加しました。");
+    });
+
+    document.querySelector("#addPreset").addEventListener("click", () => {
+      const name = presetName.value.trim();
+      const terms = parseTerms(presetTerms.value);
+
+      if (!name || terms.length === 0) {
+        showToast("セット名と英語タグを入れてください。");
+        return;
+      }
+
+      const exists = promptSets.some((set) => set.name.toLowerCase() === name.toLowerCase());
+
+      if (exists) {
+        showToast("そのセット名はすでにあります。");
+        return;
+      }
+
+      promptSets.push({
+        id: `prompt-set-${Date.now()}`,
+        name,
+        terms
+      });
+      presetName.value = "";
+      presetTerms.value = "";
+      savePromptSets();
+      renderPromptSets();
+      showToast("セットを保存しました。");
+    });
+
+    customTerm.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        document.querySelector("#addCustom").click();
+      }
+    });
+
+    newTermEn.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        document.querySelector("#addVocabulary").click();
+      }
+    });
+
+    presetName.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        document.querySelector("#addPreset").click();
+      }
+    });
+
+    prompt.addEventListener("keydown", (event) => {
+      if (event.key === "," && !event.ctrlKey && !event.metaKey && !event.altKey) {
+        event.preventDefault();
+        insertCommaSpace(prompt);
+      }
+    });
+
+    prompt.addEventListener("scroll", () => {
+      promptMirror.scrollTop = prompt.scrollTop;
+      promptMirror.scrollLeft = prompt.scrollLeft;
+    });
+
+    search.addEventListener("input", renderChips);
+
+    document.querySelector("#checkDuplicates").addEventListener("click", () => {
+      checkPromptDuplicates(true);
+    });
+
+    document.querySelector("#copyPrompt").addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      if (!checkPromptDuplicates(false)) {
+        return;
+      }
+
+      copyText(prompt.value, "Promptをコピーしました。");
+    }, true);
+
+    document.querySelector("#copyBoth").addEventListener("click", (event) => {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+
+      if (!checkPromptDuplicates(false)) {
+        return;
+      }
+
+      copyText(`Prompt:\n${prompt.value}\n\nNegative Prompt:\n${negativePrompt.value}`, "両方コピーしました。");
+    }, true);
+
+    prompt.addEventListener("input", () => {
+      selected = prompt.value.split(",").map((term) => term.trim()).filter(Boolean);
+      duplicateTerms = [];
+      updatePromptCount();
+      renderDuplicateState();
+      renderSelected();
+      renderPromptMirror();
+      renderChips();
+    });
+
+    negativePrompt.addEventListener("input", () => {
+      negativeSelected = negativePrompt.value.split(",").map((term) => term.trim()).filter(Boolean);
+      renderOutput();
+      renderSelected();
+      renderChips();
+    });
+
+    loadCustomCategories();
+    loadCategoryOrder();
+    loadCustomVocabulary();
+    loadPromptSets();
+    render();
+  </script>
+</body>
+</html>
