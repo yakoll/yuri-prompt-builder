@@ -283,8 +283,124 @@
       color: var(--text);
     }
 
+    .preset-editor input {
+      min-height: 44px;
+    }
+
     .preset-editor textarea {
       min-height: 88px;
+    }
+
+    .preset-editor-row {
+      display: grid;
+      grid-template-columns: 1fr 52px;
+      gap: 8px;
+      align-items: stretch;
+    }
+
+    .preset-color-picker {
+      position: relative;
+      align-self: stretch;
+    }
+
+    .preset-color-trigger {
+      width: 52px;
+      height: 44px;
+      padding: 4px;
+      border-radius: 8px;
+      background: #fff;
+      border: 1px solid var(--line);
+    }
+
+    .preset-color-preview {
+      display: block;
+      width: 100%;
+      height: 100%;
+      border-radius: 5px;
+      border: 1px solid rgba(47, 41, 37, 0.1);
+    }
+
+    .preset-color-popover {
+      position: absolute;
+      top: calc(100% + 8px);
+      right: 0;
+      z-index: 20;
+      display: none;
+      width: 242px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fffdf9;
+      box-shadow: 0 16px 30px rgba(67, 51, 39, 0.16);
+    }
+
+    .preset-color-picker.open .preset-color-popover {
+      display: block;
+    }
+
+    .preset-swatch-grid {
+      display: grid;
+      grid-template-columns: repeat(8, 22px);
+      grid-auto-rows: 22px;
+      gap: 7px;
+      width: max-content;
+    }
+
+    .color-swatch {
+      position: relative;
+      display: grid;
+      place-items: center;
+      width: 22px;
+      height: 22px;
+      padding: 0;
+      border-radius: 6px;
+      border: none;
+      background: transparent;
+      box-sizing: border-box;
+      cursor: pointer;
+      font-size: 0;
+      line-height: 0;
+      overflow: visible;
+      user-select: none;
+    }
+
+    .color-swatch-fill {
+      display: block;
+      width: 16px;
+      height: 16px;
+      border-radius: 4px;
+      border: 1px solid rgba(47, 41, 37, 0.14);
+      background: var(--swatch-color);
+      box-sizing: border-box;
+    }
+
+    .color-swatch.selected::after {
+      content: "✓";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 12px;
+      height: 12px;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: rgba(47, 41, 37, 0.88);
+      color: #fff;
+      font-size: 9px;
+      line-height: 12px;
+      text-align: center;
+      pointer-events: none;
+    }
+
+    .color-swatch:focus,
+    .color-swatch:focus-visible,
+    .color-swatch:active {
+      outline: none;
+    }
+
+    .color-swatch:focus,
+    .color-swatch:focus-visible,
+    .color-swatch:active {
+      outline: none;
     }
 
     .preset-tile {
@@ -328,6 +444,25 @@
       font-size: 12px;
       line-height: 1;
       flex: 0 0 auto;
+    }
+
+    .data-tools {
+      display: grid;
+      gap: 8px;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .data-tools h3 {
+      margin: 0;
+      font-size: 15px;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
     }
 
     .field {
@@ -558,6 +693,8 @@
 
       .chips,
       .presets,
+      .preset-editor-row,
+      .data-grid,
       .vocab-grid,
       .actions {
         grid-template-columns: 1fr;
@@ -579,7 +716,6 @@
         <div class="builder-head">
           <h2 id="categoryTitle"></h2>
           <input class="search" id="search" type="search" placeholder="日本語・英語で検索">
-          <button class="action" id="checkDuplicates">重複チェック</button>
         </div>
 
         <div class="chips" id="chips"></div>
@@ -592,8 +728,14 @@
           <h3>プロンプトセット</h3>
           <div class="presets" id="presetList"></div>
         <div class="preset-editor">
-          <input id="presetName" type="text" placeholder="セット名 例: 遊園地 / みどり">
-          <textarea id="presetTerms" spellcheck="false" placeholder="まとめて入れる英語タグ 例: ferris wheel, blue sky, many people, balloons"></textarea>
+          <div class="preset-editor-row">
+            <input id="presetName" type="text" placeholder="セット名">
+            <label class="preset-color">色
+              <input id="presetColor" type="hidden" value="#d9ede5">
+              <div class="preset-swatch-grid" id="presetColorPalette"></div>
+            </label>
+          </div>
+          <textarea id="presetTerms" spellcheck="false" placeholder="プロンプトを入力"></textarea>
           <button class="action" id="addPreset">セットを保存</button>
         </div>
         </section>
@@ -624,16 +766,11 @@
           <button class="action" id="reset">リセット</button>
         </div>
 
-        <div class="custom">
-          <input id="customTerm" type="text" placeholder="英語タグを直接追加">
-          <button class="action" id="addCustom">追加</button>
-        </div>
-
         <section class="vocab-editor">
           <h3>新しい単語をボタンに追加</h3>
           <div class="vocab-grid">
-            <input id="newLabelJa" type="text" placeholder="表示名 日本語 省略可">
-            <input id="newTermEn" type="text" placeholder="英語タグ 例: black ponytail">
+            <input id="newLabelJa" type="text" placeholder="表示名">
+            <input id="newTermEn" type="text" placeholder="英語タグ">
           </div>
           <div class="vocab-grid">
             <select id="newCategory"></select>
@@ -644,6 +781,18 @@
         <section class="selected">
           <h3>選択中</h3>
           <div class="selected-list" id="selectedList"></div>
+        </section>
+
+        <section class="data-tools">
+          <h3>データ管理</h3>
+          <div class="data-grid">
+            <button class="action" id="exportAll">全体をエクスポート</button>
+            <button class="action" id="importAll">全体をインポート</button>
+            <button class="action" id="exportCategories">カテゴリをバックアップ</button>
+            <button class="action" id="importCategories">カテゴリを復元</button>
+          </div>
+          <input id="importAllFile" type="file" accept=".json,application/json" hidden>
+          <input id="importCategoriesFile" type="file" accept=".json,application/json" hidden>
         </section>
 
         <div class="toast" id="toast" aria-live="polite"></div>
@@ -805,6 +954,7 @@
         id: "sweet",
         name: "甘い雰囲気",
         builtin: true,
+        color: "#d9ede5",
         terms: [
           "two girls",
           "yuri",
@@ -824,6 +974,7 @@
         id: "school",
         name: "放課後",
         builtin: true,
+        color: "#dfeafb",
         terms: [
           "two girls",
           "yuri",
@@ -842,6 +993,7 @@
         id: "date",
         name: "デート",
         builtin: true,
+        color: "#f4e5c0",
         terms: [
           "two girls",
           "yuri",
@@ -884,19 +1036,39 @@
     const duplicateNote = document.querySelector("#duplicateNote");
     const selectedList = document.querySelector("#selectedList");
     const toast = document.querySelector("#toast");
-    const customTerm = document.querySelector("#customTerm");
     const presetList = document.querySelector("#presetList");
     const presetName = document.querySelector("#presetName");
+    const presetColor = document.querySelector("#presetColor");
+    const presetColorPalette = document.querySelector("#presetColorPalette");
     const presetTerms = document.querySelector("#presetTerms");
     const newLabelJa = document.querySelector("#newLabelJa");
     const newTermEn = document.querySelector("#newTermEn");
     const newCategory = document.querySelector("#newCategory");
+    const importAllFile = document.querySelector("#importAllFile");
+    const importCategoriesFile = document.querySelector("#importCategoriesFile");
     const customCategoriesKey = "yuri-prompt-builder-custom-categories";
     const categoryOrderKey = "yuri-prompt-builder-category-order";
     const customVocabularyKey = "yuri-prompt-builder-custom-vocabulary";
     const customPromptSetsKey = "yuri-prompt-builder-custom-prompt-sets";
     let draggedCategoryId = null;
     let duplicateTerms = [];
+    let presetPaletteOpen = false;
+    let presetColorPicker = null;
+    let presetColorTrigger = null;
+    let presetColorPreview = null;
+    let presetColorPopover = null;
+    const presetColors = [
+      "#d9ede5", "#ff005d", "#8ecae6", "#f4e5c0", "#6d597a", "#2a9d8f", "#f94144", "#adb5bd",
+      "#dfeafb", "#ff7a00", "#52b788", "#fde2e4", "#4361ee", "#bc6c25", "#e4c1f9", "#343a40",
+      "#f8dbe3", "#ffb703", "#219ebc", "#efe0f7", "#588157", "#e76f51", "#a9def9", "#6c757d",
+      "#ece4dc", "#3a0ca3", "#90be6d", "#f8d6c1", "#00b4d8", "#b56576", "#fefae0", "#111111",
+      "#d8efe1", "#f3722c", "#48bfe3", "#cdeac0", "#9a8c98", "#0077b6", "#ffd166", "#495057",
+      "#f7e3cf", "#7209b7", "#74c69d", "#e6f0ff", "#e5989b", "#4d908e", "#ffd6a5", "#212529",
+      "#d9e8f5", "#f8961e", "#c3f0ca", "#ecdff2", "#577590", "#c1121f", "#bee1e6", "#000000",
+      "#fbe4d8", "#0096c7", "#a7c957", "#f7d6e0", "#560bad", "#dda15e", "#ced4da", "#f28482"
+    ];
+    const builtinCategoryIds = categories.filter((category) => category.custom !== true).map((category) => category.id);
+    const builtinPromptSetIds = promptSets.filter((set) => set.builtin === true).map((set) => set.id);
 
     function uniq(items) {
       return [...new Set(items.filter(Boolean))];
@@ -920,6 +1092,104 @@
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;");
+    }
+
+    function pickTextColor(background) {
+      const hex = background.replace("#", "");
+      const value = hex.length === 3
+        ? hex.split("").map((part) => part + part).join("")
+        : hex;
+      const r = parseInt(value.slice(0, 2), 16);
+      const g = parseInt(value.slice(2, 4), 16);
+      const b = parseInt(value.slice(4, 6), 16);
+      const luminance = (0.299 * r) + (0.587 * g) + (0.114 * b);
+
+      return luminance > 180 ? "#2f2925" : "#ffffff";
+    }
+
+    function setPresetPaletteOpen(isOpen) {
+      presetPaletteOpen = isOpen;
+
+      if (presetColorPicker) {
+        presetColorPicker.classList.toggle("open", presetPaletteOpen);
+      }
+    }
+
+    function setupPresetEditorUi() {
+      presetName.placeholder = "セット名";
+      presetTerms.placeholder = "プロンプトを入力";
+      newLabelJa.placeholder = "表示名";
+      newTermEn.placeholder = "英語タグ";
+
+      const legacyPicker = document.querySelector(".preset-color");
+
+      if (!legacyPicker || legacyPicker.dataset.enhanced === "true") {
+        return;
+      }
+
+      legacyPicker.dataset.enhanced = "true";
+      legacyPicker.className = "preset-color-picker";
+
+      presetColorTrigger = document.createElement("button");
+      presetColorTrigger.className = "preset-color-trigger";
+      presetColorTrigger.type = "button";
+      presetColorTrigger.setAttribute("aria-label", "色を選択");
+
+      presetColorPreview = document.createElement("span");
+      presetColorPreview.className = "preset-color-preview";
+      presetColorTrigger.appendChild(presetColorPreview);
+
+      presetColorPopover = document.createElement("div");
+      presetColorPopover.className = "preset-color-popover";
+
+      legacyPicker.textContent = "";
+      legacyPicker.appendChild(presetColor);
+      legacyPicker.appendChild(presetColorTrigger);
+      presetColorPopover.appendChild(presetColorPalette);
+      legacyPicker.appendChild(presetColorPopover);
+
+      presetColorPicker = legacyPicker;
+
+      presetColorTrigger.addEventListener("click", (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        setPresetPaletteOpen(!presetPaletteOpen);
+      });
+    }
+
+    function renderPresetColorPalette() {
+      if (!presetColorPreview) {
+        return;
+      }
+
+      presetColorPreview.style.background = presetColor.value;
+      setPresetPaletteOpen(presetPaletteOpen);
+      presetColorPalette.innerHTML = "";
+
+      for (const color of presetColors) {
+        const button = document.createElement("div");
+        const fill = document.createElement("span");
+        button.className = `color-swatch${presetColor.value === color ? " selected" : ""}`;
+        button.role = "button";
+        button.tabIndex = 0;
+        fill.className = "color-swatch-fill";
+        fill.style.setProperty("--swatch-color", color);
+        button.setAttribute("aria-label", color);
+        const chooseColor = () => {
+          presetColor.value = color;
+          setPresetPaletteOpen(false);
+          renderPresetColorPalette();
+        };
+        button.addEventListener("click", chooseColor);
+        button.addEventListener("keydown", (event) => {
+          if (event.key === "Enter" || event.key === " ") {
+            event.preventDefault();
+            chooseColor();
+          }
+        });
+        button.appendChild(fill);
+        presetColorPalette.appendChild(button);
+      }
     }
 
     function insertCommaSpace(textarea) {
@@ -1090,10 +1360,119 @@
         .map((set) => ({
           id: set.id,
           name: set.name,
+          color: set.color || "#d9ede5",
           terms: set.terms
         }));
 
       localStorage.setItem(customPromptSetsKey, JSON.stringify(customSets));
+    }
+
+    function collectCustomCategories() {
+      return categories
+        .filter((category) => category.custom === true)
+        .map((category) => ({
+          id: category.id,
+          name: category.name,
+          negative: !!category.negative
+        }));
+    }
+
+    function collectCustomVocabulary() {
+      return categories
+        .map((category) => ({
+          id: category.id,
+          items: category.items.filter((item) => item[2] === true).map(([jp, en]) => [jp, en])
+        }))
+        .filter((category) => category.items.length > 0);
+    }
+
+    function collectCustomPromptSets() {
+      return promptSets
+        .filter((set) => set.builtin !== true)
+        .map((set) => ({
+          id: set.id,
+          name: set.name,
+          color: set.color || "#d9ede5",
+          terms: set.terms
+        }));
+    }
+
+    function buildExportPayload(kind = "full") {
+      const payload = {
+        version: 1,
+        kind,
+        exportedAt: new Date().toISOString(),
+        customCategories: collectCustomCategories(),
+        customVocabulary: collectCustomVocabulary(),
+        categoryOrder: categories.map((category) => category.id)
+      };
+
+      if (kind === "full") {
+        payload.customPromptSets = collectCustomPromptSets();
+      }
+
+      return payload;
+    }
+
+    function downloadJson(filename, payload) {
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = filename;
+      link.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetCustomCategoriesState() {
+      for (let index = categories.length - 1; index >= 0; index -= 1) {
+        if (categories[index].custom === true) {
+          categories.splice(index, 1);
+        }
+      }
+
+      for (const category of categories) {
+        category.items = category.items.filter((item) => item[2] !== true);
+      }
+    }
+
+    function resetPromptSetsState() {
+      for (let index = promptSets.length - 1; index >= 0; index -= 1) {
+        if (promptSets[index].builtin !== true) {
+          promptSets.splice(index, 1);
+        }
+      }
+    }
+
+    function applyImportedData(payload, mode = "full") {
+      if (!payload || !Array.isArray(payload.customCategories) || !Array.isArray(payload.customVocabulary)) {
+        throw new Error("invalid import data");
+      }
+
+      resetCustomCategoriesState();
+
+      localStorage.setItem(customCategoriesKey, JSON.stringify(payload.customCategories));
+      localStorage.setItem(customVocabularyKey, JSON.stringify(payload.customVocabulary));
+
+      const safeOrder = Array.isArray(payload.categoryOrder) ? payload.categoryOrder : categories.map((category) => category.id);
+      localStorage.setItem(categoryOrderKey, JSON.stringify(safeOrder));
+
+      if (mode === "full") {
+        resetPromptSetsState();
+        localStorage.setItem(customPromptSetsKey, JSON.stringify(Array.isArray(payload.customPromptSets) ? payload.customPromptSets : []));
+      }
+
+      loadCustomCategories();
+      loadCategoryOrder();
+      loadCustomVocabulary();
+
+      if (mode === "full") {
+        loadPromptSets();
+      }
+
+      currentCategory = categories[0]?.id || "";
+      render();
     }
 
     function loadPromptSets() {
@@ -1115,6 +1494,7 @@
             promptSets.push({
               id: entry.id,
               name: entry.name,
+              color: entry.color || "#d9ede5",
               terms: uniq(entry.terms.map((term) => String(term).trim()).filter(Boolean))
             });
           }
@@ -1224,6 +1604,7 @@
       promptSets.splice(index, 1);
       savePromptSets();
       renderPromptSets();
+      renderPresetColorPalette();
       showToast("セットを削除しました。");
     }
 
@@ -1235,6 +1616,8 @@
         const applyButton = document.createElement("button");
 
         tile.className = "preset-tile";
+        tile.style.background = set.color || "#d9ede5";
+        tile.style.color = pickTextColor(set.color || "#d9ede5");
         applyButton.className = "preset-apply";
         applyButton.type = "button";
         applyButton.textContent = set.name;
@@ -1446,6 +1829,7 @@
     function render() {
       renderTabs();
       renderPromptSets();
+      renderPresetColorPalette();
       renderCategoryOptions();
       renderChips();
       renderOutput();
@@ -1530,18 +1914,6 @@
       showToast("リセットしました。");
     });
 
-    document.querySelector("#addCustom").addEventListener("click", () => {
-      const term = customTerm.value.trim();
-
-      if (!term) {
-        return;
-      }
-
-      selected = uniq([...readPromptTerms(), term]);
-      customTerm.value = "";
-      render();
-    });
-
     document.querySelector("#addVocabulary").addEventListener("click", () => {
       const term = newTermEn.value.trim();
       const label = newLabelJa.value.trim() || term;
@@ -1588,20 +1960,15 @@
       promptSets.push({
         id: `prompt-set-${Date.now()}`,
         name,
+        color: presetColor.value,
         terms
       });
       presetName.value = "";
+      presetColor.value = "#d9ede5";
       presetTerms.value = "";
       savePromptSets();
       renderPromptSets();
       showToast("セットを保存しました。");
-    });
-
-    customTerm.addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        document.querySelector("#addCustom").click();
-      }
     });
 
     newTermEn.addEventListener("keydown", (event) => {
@@ -1615,6 +1982,12 @@
       if (event.key === "Enter") {
         event.preventDefault();
         document.querySelector("#addPreset").click();
+      }
+    });
+
+    document.addEventListener("click", (event) => {
+      if (presetPaletteOpen && presetColorPicker && !presetColorPicker.contains(event.target)) {
+        setPresetPaletteOpen(false);
       }
     });
 
@@ -1632,8 +2005,58 @@
 
     search.addEventListener("input", renderChips);
 
-    document.querySelector("#checkDuplicates").addEventListener("click", () => {
-      checkPromptDuplicates(true);
+    document.querySelector("#exportAll").addEventListener("click", () => {
+      downloadJson("yuri-prompt-builder-data.json", buildExportPayload("full"));
+      showToast("全体データを書き出しました。");
+    });
+
+    document.querySelector("#exportCategories").addEventListener("click", () => {
+      downloadJson("yuri-prompt-builder-categories.json", buildExportPayload("categories"));
+      showToast("カテゴリのバックアップを書き出しました。");
+    });
+
+    document.querySelector("#importAll").addEventListener("click", () => {
+      importAllFile.click();
+    });
+
+    document.querySelector("#importCategories").addEventListener("click", () => {
+      importCategoriesFile.click();
+    });
+
+    importAllFile.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      try {
+        const payload = JSON.parse(await file.text());
+        applyImportedData(payload, "full");
+        showToast("全体データを読み込みました。");
+      } catch (error) {
+        showToast("全体データの読み込みに失敗しました。");
+      } finally {
+        importAllFile.value = "";
+      }
+    });
+
+    importCategoriesFile.addEventListener("change", async (event) => {
+      const file = event.target.files?.[0];
+
+      if (!file) {
+        return;
+      }
+
+      try {
+        const payload = JSON.parse(await file.text());
+        applyImportedData(payload, "categories");
+        showToast("カテゴリのバックアップを読み込みました。");
+      } catch (error) {
+        showToast("カテゴリの読み込みに失敗しました。");
+      } finally {
+        importCategoriesFile.value = "";
+      }
     });
 
     document.querySelector("#copyPrompt").addEventListener("click", (event) => {
@@ -1675,6 +2098,7 @@
       renderChips();
     });
 
+    setupPresetEditorUi();
     loadCustomCategories();
     loadCategoryOrder();
     loadCustomVocabulary();
